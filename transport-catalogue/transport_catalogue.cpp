@@ -28,6 +28,7 @@ void TransportCatalogue::AddBus(const Bus& bus) {
   busname_to_bus_[added_bus->number] = added_bus;
   added_bus->length_between_bus_stops = length_between_bus_stops;
   added_bus->curvature = length_between_bus_stops / length;
+  added_bus->unique_stops = GetUniqueStations(added_bus->number);
 }
 
 Stop* TransportCatalogue::FindStop(std::string_view name) {
@@ -38,25 +39,17 @@ const Stop* TransportCatalogue::FindStop(std::string_view name) const {
   return stopname_to_stop_.count(name) ? stopname_to_stop_.at(name) : nullptr;
 }
 
-Bus* TransportCatalogue::FindBus(std::string_view number) {
-  return busname_to_bus_.count(number) ? busname_to_bus_.at(number) : nullptr;
-}
-
-const Bus* TransportCatalogue::FindBus(std::string_view number) const {
-  return busname_to_bus_.count(number) ? busname_to_bus_.at(number) : nullptr;
-}
-
-std::vector<Stop*> TransportCatalogue::GetBusInfo(
-    std::string_view number) const {
-  if (busname_to_bus_.count(number) == 0) {
-    return {};
+const Bus* TransportCatalogue::GetBusInfo(std::string_view number) const {
+  if (!busname_to_bus_.count(number)) {
+    return nullptr;
   }
-  return busname_to_bus_.at(number)->stops;
+  Bus* bus = busname_to_bus_.at(number);
+  return bus;
 }
 
 size_t TransportCatalogue::GetUniqueStations(
     std::string_view bus_number) const {
-  auto bus = FindBus(bus_number);
+  auto bus = busname_to_bus_.at(bus_number);
   std::unordered_set<std::string_view> unique_stations;
   for (auto stops : bus->stops) {
     unique_stations.insert(stops->name);

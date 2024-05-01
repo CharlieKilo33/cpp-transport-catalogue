@@ -12,7 +12,7 @@ struct Stop {
   Stop() = default;
   std::string name;
   Coordinates coordinates{};
-  std::pair<std::string_view, double> distance;
+  [[maybe_unused]] std::pair<std::string_view, double> distance;
 };
 
 struct Bus {
@@ -21,6 +21,7 @@ struct Bus {
   std::vector<Stop*> stops;
   double curvature = 0;
   double length_between_bus_stops = 0;
+  size_t unique_stops = 0;
 };
 }  // namespace detail
 
@@ -42,11 +43,11 @@ class TransportCatalogue {
   void AddStop(const Stop& stop);
   void AddBus(const Bus& bus);
   double AddDistance(Stop* first, Stop* second);
-  Stop* FindStop(std::string_view name);
+  Stop* FindStop(
+      std::string_view name);  // этот метод использую в input_reader, без него
+                               // возникает ошибка
   const Stop* FindStop(std::string_view name) const;
-  Bus* FindBus(std::string_view number);
-  const Bus* FindBus(std::string_view number) const;
-  std::vector<Stop*> GetBusInfo(std::string_view number) const;
+  const Bus* GetBusInfo(std::string_view number) const;
   size_t GetUniqueStations(std::string_view bus_number) const;
   std::set<std::string_view> GetBusesThroughStop(
       std::string_view stop_name) const;
@@ -54,8 +55,6 @@ class TransportCatalogue {
                                std::string_view to_stop, double distance);
   double GetDistanceBetweenStops(Stop* from_stop, Stop* to_stop) const;
   class DistanceHasher {
-    static const size_t N = 576UL;
-
    public:
     size_t operator()(
         const std::pair<detail::Stop*, detail::Stop*>& element) const {

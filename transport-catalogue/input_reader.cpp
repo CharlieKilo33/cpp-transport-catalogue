@@ -1,7 +1,6 @@
 #include "input_reader.h"
 
 #include <algorithm>
-#include <cassert>
 #include <iterator>
 #include <sstream>
 
@@ -107,10 +106,14 @@ void InputReader::ParseLine(std::string_view line) {
   }
 }
 
-std::vector<std::pair<std::string, double>> ParseDistance(
-    std::string_view str) {
+struct Distance {
+  std::string stop_name_;
+  double distance_ = 0;
+};
+
+std::vector<Distance> ParseDistances(std::string_view str) {
   std::istringstream iss(str.data());
-  std::vector<std::pair<std::string, double>> res;
+  std::vector<Distance> res;
   std::string units, to, stop_name;
   double distance;
   iss.ignore(256, ',');
@@ -122,49 +125,77 @@ std::vector<std::pair<std::string, double>> ParseDistance(
     iss >> to;
     std::getline(iss, stop_name, ',');
     stop_name.erase(0, stop_name.find_first_not_of(" \t\r\n"));
-    res.emplace_back(stop_name, distance);
+    Distance new_dist;
+    new_dist.distance_ = distance;
+    new_dist.stop_name_ = stop_name;
+    res.emplace_back(new_dist);
   }
   return res;
 }
 
+void InputReader::ApplyCommandStop(transport::TransportCatalogue& catalogue,
+                                   const CommandDescription& command) {
+  Stop temp_stop;
+  temp_stop.name = command.id;
+  temp_stop.coordinates = ParseCoordinates(command.description);
+  catalogue.AddStop(temp_stop);
+}
+
+void InputReader::ApplyCommandBus(
+    TransportCatalogue& catalogue,
+    const std::vector<CommandDescription>& busses) {
+  for (const auto& bus : busses) {
+    std::vector<detail::Stop*> temp_bus_stops;
+    for (const auto stop : ParseRoute(bus.description)) {
+      temp_bus_stops.push_back(catalogue.FindStop(stop));
+    }
+    Bus temp_bus;
+    temp_bus.number = bus.id;
+    temp_bus.stops = std::move(temp_bus_stops);
+    catalogue.AddBus(temp_bus);
+  }
+}
+
 void InputReader::ApplyCommands(
     [[maybe_unused]] TransportCatalogue& catalogue) const {
-  std::vector<CommandDescription> temp;
-  for (const auto& i : commands_) {
-    if (i.command == "Stop") {
-      Stop temp_stop;
-      temp_stop.name = i.id;
-      temp_stop.coordinates = ParseCoordinates(i.description);
-      catalogue.AddStop(temp_stop);
-    } else if (i.command == "Bus") {
-      temp.push_back(i);
+  std::vector<CommandDescription> busses;
+  for (const auto& command : commands_) {
+    if (command.command == "Stop") {
+      ApplyCommandStop(catalogue, command);
+    } else if (command.command == "Bus") {
+      busses.push_back(command);
     } else {
       break;
     }
   }
 
-  for (const auto& i : commands_) {
-    if (i.command == "Stop") {
-      std::vector<std::pair<std::string, double>> distances =
-          ParseDistance(i.description);
-      for (const auto& j : distances) {
-        catalogue.AddDistanceBetweenStops(i.id, j.first, j.second);
+  for (const auto& command : commands_) {
+    if (command.command == "Stop") {
+      std::vector<Distance> distances = ParseDistances(command.description);
+      for (const auto& distance : distances) {
+        catalogue.AddDistanceBetweenStops(command.id, distance.stop_name_,
+                                          distance.distance_);
       }
-    } else if (i.command == "Bus") {
+    } else if (command.command == "Bus") {
       continue;
     } else {
       break;
     }
   }
 
-  for (const auto& i : temp) {
-    std::vector<detail::Stop*> temp_buses;
-    for (auto j : ParseRoute(i.description)) {
-      temp_buses.push_back(catalogue.FindStop(j));
-    }
-    Bus temp_bus;
-    temp_bus.number = i.id;
-    temp_bus.stops = std::move(temp_buses);
-    catalogue.AddBus(temp_bus);
+  if (!busses.empty()) {
+    ApplyCommandBus(catalogue, busses);
   }
+}
+
+void ReadBaseRequests(std::istream& input_stream, TransportCatalogue& catalogue,
+                      InputReader& reader) {
+  int base_request_count;
+  input_stream >> base_request_count >> std::ws;
+  for (int i = 0; i < base_request_count; ++i) {
+    std::string line;
+    getline(input_stream, line);
+    reader.ParseLine(line);
+  }
+  reader.ApplyCommands(catalogue);
 }

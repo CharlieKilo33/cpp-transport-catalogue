@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "geo.h"
+#include "iostream"
 #include "transport_catalogue.h"
 
 using namespace transport;
@@ -32,6 +33,14 @@ class InputReader {
    */
   void ApplyCommands(TransportCatalogue& catalogue) const;
 
+  static void ApplyCommandStop(TransportCatalogue& catalogue,
+                               const CommandDescription& command);
+  static void ApplyCommandBus(TransportCatalogue& catalogue,
+                              const std::vector<CommandDescription>& busses);
+
  private:
   std::vector<CommandDescription> commands_;
 };
+
+void ReadBaseRequests(std::istream& input_stream,
+                          TransportCatalogue& catalogue, InputReader& reader);
