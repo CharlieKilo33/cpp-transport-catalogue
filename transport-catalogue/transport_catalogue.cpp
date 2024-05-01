@@ -17,9 +17,10 @@ void TransportCatalogue::AddBus(const Bus& bus) {
   double length = 0;
 
   for (size_t i = 0; i < added_bus->stops.size() - 1; ++i) {
-    length_between_bus_stops +=
-        GetDistanceBetweenStops(added_bus->stops[i], added_bus->stops[i + 1]);
-    length += AddDistance(added_bus->stops[i], added_bus->stops[i + 1]);
+    double distance_from_road = GetDistanceBetweenStops(added_bus->stops[i], added_bus->stops[i + 1]).first;
+    double distance_from_coords = GetDistanceBetweenStops(added_bus->stops[i], added_bus->stops[i + 1]).second;
+    length_between_bus_stops += distance_from_road;
+    length += distance_from_coords;
     if (i == added_bus->stops.size() - 2) {
       buses_through_stop_[added_bus->stops[i + 1]].push_back(added_bus);
     }
@@ -31,11 +32,7 @@ void TransportCatalogue::AddBus(const Bus& bus) {
   added_bus->unique_stops = GetUniqueStations(added_bus->number);
 }
 
-Stop* TransportCatalogue::FindStop(std::string_view name) {
-  return stopname_to_stop_.count(name) ? stopname_to_stop_.at(name) : nullptr;
-}
-
-const Stop* TransportCatalogue::FindStop(std::string_view name) const {
+Stop* TransportCatalogue::FindStop(std::string_view name) const {
   return stopname_to_stop_.count(name) ? stopname_to_stop_.at(name) : nullptr;
 }
 
@@ -55,12 +52,6 @@ size_t TransportCatalogue::GetUniqueStations(
     unique_stations.insert(stops->name);
   }
   return unique_stations.size();
-}
-
-double TransportCatalogue::AddDistance(Stop* first, Stop* second) {
-  double res = ComputeDistance(first->coordinates, second->coordinates);
-  distance_[{first, second}] = res;
-  return res;
 }
 
 std::set<std::string_view> TransportCatalogue::GetBusesThroughStop(
@@ -84,11 +75,13 @@ void TransportCatalogue::AddDistanceBetweenStops(std::string_view from_stop,
   distances_between_bus_stops_[{stop1, stop2}] = distance;
 }
 
-double TransportCatalogue::GetDistanceBetweenStops(
-    detail::Stop* from_stop, detail::Stop* to_stop) const {
+std::pair<double, double> TransportCatalogue::GetDistanceBetweenStops(
+    detail::Stop* from_stop, detail::Stop* to_stop) {
+  auto old_distance = ComputeDistance(from_stop->coordinates, to_stop->coordinates);
+  distance_[{from_stop, to_stop}] = old_distance;
   auto distance = distances_between_bus_stops_.find({from_stop, to_stop});
   if (distance == distances_between_bus_stops_.end()) {
-    return distances_between_bus_stops_.at({to_stop, from_stop});
+    return {distances_between_bus_stops_.at({to_stop, from_stop}), old_distance};
   }
-  return distance->second;
+  return {distance->second, old_distance};
 }

@@ -42,18 +42,14 @@ class TransportCatalogue {
  public:
   void AddStop(const Stop& stop);
   void AddBus(const Bus& bus);
-  double AddDistance(Stop* first, Stop* second);
-  Stop* FindStop(
-      std::string_view name);  // этот метод использую в input_reader, без него
-                               // возникает ошибка
-  const Stop* FindStop(std::string_view name) const;
+  Stop* FindStop(std::string_view name) const; //этот метод не будет менять остановку
   const Bus* GetBusInfo(std::string_view number) const;
-  size_t GetUniqueStations(std::string_view bus_number) const;
   std::set<std::string_view> GetBusesThroughStop(
       std::string_view stop_name) const;
   void AddDistanceBetweenStops(std::string_view from_stop,
                                std::string_view to_stop, double distance);
-  double GetDistanceBetweenStops(Stop* from_stop, Stop* to_stop) const;
+  std::pair<double, double> GetDistanceBetweenStops(Stop* from_stop,
+                                                    Stop* to_stop);
   class DistanceHasher {
    public:
     size_t operator()(
@@ -73,5 +69,6 @@ class TransportCatalogue {
   std::unordered_map<const Stop*, std::vector<Bus*>> buses_through_stop_;
   std::unordered_map<std::pair<Stop*, Stop*>, double, DistanceHasher>
       distances_between_bus_stops_;
+  size_t GetUniqueStations(std::string_view bus_number) const;
 };
 }  // namespace transport
