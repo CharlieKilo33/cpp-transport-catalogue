@@ -3,9 +3,11 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <sstream>
 
 /**
- * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
+ * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта,
+ * долгота)
  */
 Coordinates ParseCoordinates(std::string_view str) {
   static const double nan = std::nan("");
@@ -37,7 +39,8 @@ std::string_view Trim(std::string_view string) {
 }
 
 /**
- * Разбивает строку string на n строк, с помощью указанного символа-разделителя delim
+ * Разбивает строку string на n строк, с помощью указанного символа-разделителя
+ * delim
  */
 std::vector<std::string_view> Split(std::string_view string, char delim) {
   std::vector<std::string_view> result;
@@ -48,7 +51,8 @@ std::vector<std::string_view> Split(std::string_view string, char delim) {
     if (delim_pos == string.npos) {
       delim_pos = string.size();
     }
-    if (auto substr = Trim(string.substr(pos, delim_pos - pos)); !substr.empty()) {
+    if (auto substr = Trim(string.substr(pos, delim_pos - pos));
+        !substr.empty()) {
       result.push_back(substr);
     }
     pos = delim_pos + 1;
@@ -59,8 +63,9 @@ std::vector<std::string_view> Split(std::string_view string, char delim) {
 
 /**
  * Парсит маршрут.
- * Для кольцевого маршрута (A>B>C>A) возвращает массив названий остановок [A,B,C,A]
- * Для некольцевого маршрута (A-B-C-D) возвращает массив названий остановок [A,B,C,D,C,B,A]
+ * Для кольцевого маршрута (A>B>C>A) возвращает массив названий остановок
+ * [A,B,C,A] Для некольцевого маршрута (A-B-C-D) возвращает массив названий
+ * остановок [A,B,C,D,C,B,A]
  */
 std::vector<std::string_view> ParseRoute(std::string_view route) {
   if (route.find('>') != route.npos) {
@@ -102,24 +107,59 @@ void InputReader::ParseLine(std::string_view line) {
   }
 }
 
-void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue &catalogue) const {
+std::vector<std::pair<std::string, double>> ParseDistance(
+    std::string_view str) {
+  std::istringstream iss(str.data());
+  std::vector<std::pair<std::string, double>> res;
+  std::string units, to, stop_name;
+  double distance;
+  iss.ignore(256, ',');
+  iss.ignore(256, ',');
+
+  while (iss) {
+    if (!(iss >> distance)) break;
+    iss >> units;
+    iss >> to;
+    std::getline(iss, stop_name, ',');
+    stop_name.erase(0, stop_name.find_first_not_of(" \t\r\n"));
+    res.emplace_back(stop_name, distance);
+  }
+  return res;
+}
+
+void InputReader::ApplyCommands(
+    [[maybe_unused]] TransportCatalogue& catalogue) const {
   std::vector<CommandDescription> temp;
-  for (auto i : commands_) {
+  for (const auto& i : commands_) {
     if (i.command == "Stop") {
       Stop temp_stop;
       temp_stop.name = i.id;
       temp_stop.coordinates = ParseCoordinates(i.description);
       catalogue.AddStop(temp_stop);
-    } else if(i.command == "Bus") {
+    } else if (i.command == "Bus") {
       temp.push_back(i);
     } else {
       break;
     }
   }
 
-  for(auto i : temp){
+  for (const auto& i : commands_) {
+    if (i.command == "Stop") {
+      std::vector<std::pair<std::string, double>> distances =
+          ParseDistance(i.description);
+      for (const auto& j : distances) {
+        catalogue.AddDistanceBetweenStops(i.id, j.first, j.second);
+      }
+    } else if (i.command == "Bus") {
+      continue;
+    } else {
+      break;
+    }
+  }
+
+  for (const auto& i : temp) {
     std::vector<detail::Stop*> temp_buses;
-    for(auto j : ParseRoute(i.description)){
+    for (auto j : ParseRoute(i.description)) {
       temp_buses.push_back(catalogue.FindStop(j));
     }
     Bus temp_bus;

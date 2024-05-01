@@ -7,5 +7,5 @@
 
 using namespace transport;
 
-void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, std::string_view request,
-                       std::ostream& output);
+void ParseAndPrintStat(const TransportCatalogue& transport_catalogue,
+                       std::string_view request, std::ostream& output);
