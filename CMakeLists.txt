@@ -3,5 +3,4 @@ project(cpp-search-server)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(main transport-catalogue/main.cpp transport-catalogue/geo.h transport-catalogue/input_reader.h transport-catalogue/input_reader.cpp transport-catalogue/stat_reader.h transport-catalogue/stat_reader.cpp transport-catalogue/transport_catalogue.h transport-catalogue/transport_catalogue.cpp)
-add_executable(tst test/domain.cpp test/domain.h test/geo.cpp test/geo.h test/json.cpp test/json.h test/json_reader.cpp test/json_reader.h test/main.cpp test/map_renderer.cpp test/map_renderer.h test/request_handler.cpp test/request_handler.h test/svg.cpp test/svg.h test/transport_catalogue.cpp test/transport_catalogue.h)
+add_executable(main transport-catalogue/map_renderer.cpp transport-catalogue/map_renderer.h transport-catalogue/domain.cpp transport-catalogue/domain.h transport-catalogue/geo.cpp transport-catalogue/geo.h transport-catalogue/json.cpp transport-catalogue/json.h transport-catalogue/json_reader.cpp transport-catalogue/json_reader.h transport-catalogue/main.cpp  transport-catalogue/request_handler.cpp transport-catalogue/request_handler.h transport-catalogue/svg.cpp transport-catalogue/svg.h transport-catalogue/transport_catalogue.cpp transport-catalogue/transport_catalogue.h)

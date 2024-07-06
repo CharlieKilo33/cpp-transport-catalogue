@@ -6,24 +6,9 @@
 #include <vector>
 
 #include "geo.h"
+#include "domain.h"
 
-namespace detail {
-struct Stop {
-  Stop() = default;
-  std::string name;
-  Coordinates coordinates{};
-  [[maybe_unused]] std::pair<std::string_view, double> distance;
-};
-
-struct Bus {
-  Bus() = default;
-  std::string number;
-  std::vector<Stop*> stops;
-  double curvature = 0;
-  double length_between_bus_stops = 0;
-  size_t unique_stops = 0;
-};
-}  // namespace detail
+// namespace detail
 
 class Hasher {
  public:
@@ -42,7 +27,7 @@ class TransportCatalogue {
  public:
   void AddStop(const Stop& stop);
   void AddBus(const Bus& bus);
-  Stop* FindStop(std::string_view name) const; //этот метод не будет менять остановку
+  Stop* FindStop(std::string_view name) const;
   const Bus* GetBusInfo(std::string_view number) const;
   std::set<std::string_view> GetBusesThroughStop(
       std::string_view stop_name) const;
@@ -50,6 +35,7 @@ class TransportCatalogue {
                                std::string_view to_stop, double distance);
   std::pair<double, double> GetDistanceBetweenStops(Stop* from_stop,
                                                     Stop* to_stop);
+  std::vector<Bus*> GetAllBuses();
   class DistanceHasher {
    public:
     size_t operator()(
