@@ -161,18 +161,18 @@ svg::Document MapRenderer::GetSVG() const {
 
   for (const auto& bus : buses) {
     if (bus->stops.empty()) continue;
-    for (auto i = 0; i < bus->stops.size(); ++i) {
+    for (auto i = 0; i < int(bus->stops.size()); ++i) {
       route_stops_coord.push_back(bus->stops[i]->coordinates);
       if(std::count(stops.begin(), stops.end(), bus->stops[i])){
         continue;
       }
       if(bus->is_roundtrip){
-        if(i == bus->stops.size() - 1){
+        if(i == int(bus->stops.size()) - 1){
           break;
         }
         stops.push_back(bus->stops[i]);
       } else {
-        if(i == bus->stops.size() / 2){
+        if(i == int(bus->stops.size()) / 2){
           stops.push_back(bus->stops[i]);
           break;
         } else {
