@@ -2,24 +2,25 @@
 
 #include <sstream>
 
-JsonReader::JsonReader(transport::TransportCatalogue& transport_catalogue,
-                       RequestHandler& request_handler, json::Document& doc)
+JsonReader::JsonReader(transport::TransportCatalogue &transport_catalogue,
+                       RequestHandler &request_handler, json::Document &doc)
     : transport_catalogue_(transport_catalogue),
       request_handler_(request_handler),
       doc_(doc) {
   LoadBaseRequests();
   LoadStatRequests();
+  LoadRoutingSettings();
   LoadRenderSettings();
 }
 
-std::vector<std::string> JsonReader::ParseStopNames(const json::Node& array) {
+std::vector<std::string> JsonReader::ParseStopNames(const json::Node &array) {
   if (!array.IsArray()) {
     std::cerr << "Not array";
     throw std::runtime_error("Not array");
   }
   std::vector<std::string> stops_names;
   stops_names.reserve(array.AsArray().size());
-  for (const auto& node : array.AsArray()) {
+  for (const auto &node : array.AsArray()) {
     stops_names.emplace_back(node.AsString());
   }
   return stops_names;
@@ -28,10 +29,10 @@ std::vector<std::string> JsonReader::ParseStopNames(const json::Node& array) {
 void JsonReader::LoadBaseRequests() {
   try {
     doc_.GetRoot().AsDict().at("base_requests");
-  } catch (const std::out_of_range& e) {
+  } catch (const std::out_of_range &e) {
     std::cerr << "Error: " << e.what() << ". No 'base_requests' in JSON."
               << std::endl;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     std::cerr << "Unknown error: " << e.what() << std::endl;
   }
   auto base_requests = doc_.GetRoot().AsDict().at("base_requests");
@@ -42,14 +43,14 @@ void JsonReader::LoadBaseRequests() {
       std::vector<detail::Bus> buses;
       stops.reserve(base_requests.AsArray().size());
       buses.reserve(base_requests.AsArray().size());
-      for (const auto& node : base_requests.AsArray()) {
+      for (const auto &node : base_requests.AsArray()) {
         if (node.AsDict().at("type").AsString() == "Stop") {
           detail::Stop new_stop;
           new_stop.name = node.AsDict().at("name").AsString();
           new_stop.coordinates.lat = node.AsDict().at("latitude").AsDouble();
           new_stop.coordinates.lng = node.AsDict().at("longitude").AsDouble();
-          for (const auto& [i, k] :
-               node.AsDict().at("road_distances").AsDict()) {
+          for (const auto &[i, k] :
+              node.AsDict().at("road_distances").AsDict()) {
             new_stop.distance.emplace_back(i, k.AsDouble());
           }
           stops.push_back(new_stop);
@@ -60,7 +61,7 @@ void JsonReader::LoadBaseRequests() {
           throw std::runtime_error("Invalid type");
         }
       }
-      for (const auto& node : temp_buses) {
+      for (const auto &node : temp_buses) {
         detail::Bus new_bus;
         new_bus.number = node.AsDict().at("name").AsString();
         new_bus.is_roundtrip = node.AsDict().at("is_roundtrip").AsBool();
@@ -82,17 +83,17 @@ void JsonReader::LoadBaseRequests() {
 void JsonReader::LoadStatRequests() {
   try {
     doc_.GetRoot().AsDict().at("stat_requests");
-  } catch (const std::out_of_range& e) {
+  } catch (const std::out_of_range &e) {
     std::cerr << "Error: " << e.what() << ". No 'stat_requests' in JSON."
               << std::endl;
 
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     std::cerr << "Unknown error: " << e.what() << std::endl;
   }
   auto stat_requests = doc_.GetRoot().AsDict().at("stat_requests");
   if (stat_requests != nullptr) {
     if (stat_requests.IsArray()) {
-      for (const auto& node : stat_requests.AsArray()) {
+      for (const auto &node : stat_requests.AsArray()) {
         StatRequest new_stat_request;
         if (!node.IsDict()) {
           std::cerr << "Bad stat request";
@@ -100,7 +101,11 @@ void JsonReader::LoadStatRequests() {
         }
         new_stat_request.id = node.AsDict().at("id").AsInt();
         new_stat_request.type = node.AsDict().at("type").AsString();
-        if (new_stat_request.type != "Map") {
+        if (new_stat_request.type == "Route") {
+          new_stat_request.name_stop_from = node.AsDict().at("from").AsString();
+          new_stat_request.name_stop_to = node.AsDict().at("to").AsString();
+        }
+        if (new_stat_request.type != "Map" && new_stat_request.type != "Route") {
           new_stat_request.name = node.AsDict().at("name").AsString();
         }
         stat_requests_.push_back(new_stat_request);
@@ -116,7 +121,7 @@ void JsonReader::LoadStatRequests() {
   }
 }
 
-svg::Color ParseColor(const json::Node& node) {
+svg::Color ParseColor(const json::Node &node) {
   svg::Color new_color;
   if (node.IsString()) {
     new_color = node.AsString();
@@ -140,10 +145,10 @@ svg::Color ParseColor(const json::Node& node) {
 void JsonReader::LoadRenderSettings() {
   try {
     doc_.GetRoot().AsDict().at("render_settings");
-  } catch (const std::out_of_range& e) {
+  } catch (const std::out_of_range &e) {
     std::cerr << "Error: " << e.what() << ". No 'render_settings' in JSON."
               << std::endl;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     std::cerr << "Unknown error: " << e.what() << std::endl;
   }
   auto render_settings = doc_.GetRoot().AsDict().at("render_settings");
@@ -181,8 +186,8 @@ void JsonReader::LoadRenderSettings() {
     new_render_settings.underlayer_color =
         ParseColor(render_settings.AsDict().at("underlayer_color"));
     std::vector<svg::Color> temp_colors;
-    for (const auto& node :
-         render_settings.AsDict().at("color_palette").AsArray()) {
+    for (const auto &node :
+        render_settings.AsDict().at("color_palette").AsArray()) {
       temp_colors.push_back(ParseColor(node));
     }
     new_render_settings.color_palette = temp_colors;
@@ -190,10 +195,27 @@ void JsonReader::LoadRenderSettings() {
   }
 }
 
-void JsonReader::ParseStatRequests(std::ostream& out) {
+void JsonReader::LoadRoutingSettings() {
+
+  try {
+    doc_.GetRoot().AsDict().at("routing_settings");
+  } catch (const std::out_of_range &e) {
+    std::cerr << "Error: " << e.what() << ". No 'routing_settings' in JSON."
+              << std::endl;
+  } catch (const std::exception &e) {
+    std::cerr << "Unknown error: " << e.what() << std::endl;
+  }
+  auto routing_settings = doc_.GetRoot().AsDict().at("routing_settings");
+  if (routing_settings.IsDict()) {
+    request_handler_.GetRouter().AddSettings(routing_settings.AsDict().at("bus_wait_time").AsInt(),
+                                             routing_settings.AsDict().at("bus_velocity").AsDouble());
+  }
+}
+
+void JsonReader::ParseStatRequests(std::ostream &out) {
   json::Builder builder;
   builder.StartArray();
-  for (const auto& request : stat_requests_) {
+  for (const auto &request : stat_requests_) {
     if (request.type == "Stop") {
       auto stop = transport_catalogue_.FindStop(request.name);
       GetMapStops(stop, request.id, builder);
@@ -202,6 +224,8 @@ void JsonReader::ParseStatRequests(std::ostream& out) {
       GetMapBuses(bus, request.id, builder);
     } else if (request.type == "Map") {
       GetMapMap(request.id, builder);
+    } else if (request.type == "Route") {
+      GetRouteItems(request.name_stop_from, request.id, request.name_stop_to, builder);
     }
   }
   if (builder.Empty()) {
@@ -212,7 +236,7 @@ void JsonReader::ParseStatRequests(std::ostream& out) {
 }
 
 void JsonReader::GetMapBuses(
-    const detail::Bus* bus, int id, json::Builder& builder) {
+    const detail::Bus *bus, int id, json::Builder &builder) {
   builder.StartDict().Key("request_id").Value(id);
   if (bus == nullptr) {
     builder.Key("error_message").Value("not found");
@@ -227,7 +251,7 @@ void JsonReader::GetMapBuses(
 }
 
 void JsonReader::GetMapStops(
-    detail::Stop* stop, int id, json::Builder& builder) {
+    detail::Stop *stop, int id, json::Builder &builder) {
   builder.StartDict().Key("request_id").Value(id);
   if (stop == nullptr) {
     builder.Key("error_message").Value("not found");
@@ -237,7 +261,7 @@ void JsonReader::GetMapStops(
   std::set<std::string_view> temp =
       transport_catalogue_.GetBusesThroughStop(stop->name);
   std::vector<json::Node> buses;
-  for (const auto& bus : temp) {
+  for (const auto &bus : temp) {
     std::string a(bus);
     buses.emplace_back(a);
   }
@@ -245,10 +269,68 @@ void JsonReader::GetMapStops(
   builder.EndDict();
 }
 
-void JsonReader::GetMapMap(int id, json::Builder& builder) {
+void JsonReader::GetMapMap(int id, json::Builder &builder) {
   builder.StartDict().Key("request_id").Value(id);
   std::ostringstream map;
   request_handler_.RenderMap().Render(map);
   builder.Key("map").Value(map.str());
   builder.EndDict();
 }
+void JsonReader::GetRouteItems(const std::string &stop_from,
+                               int id,
+                               const std::string &stop_to,
+                               json::Builder &builder) {
+  const auto &[optimal_route_opt, graph] = request_handler_.GetOptimalRoute(stop_from, stop_to);
+
+  if (!optimal_route_opt) {
+    builder
+        .StartDict()
+        .Key("request_id")
+        .Value(id)
+        .Key("error_message")
+        .Value("not found")
+        .EndDict();
+    return;
+  } else {
+    json::Array items;
+    double total_time = 0.0;
+    items.reserve(optimal_route_opt.value().edges.size());
+    for (auto &edge_id : optimal_route_opt.value().edges) {
+      const graph::Edge<double> edge = graph.GetEdge(edge_id);
+      if (edge.quality == 0) {
+        items.emplace_back(json::Node(json::Builder{}
+                                          .StartDict()
+                                          .Key("stop_name"s).Value(edge.name)
+                                          .Key("time"s).Value(edge.weight)
+                                          .Key("type"s).Value("Wait"s)
+                                          .EndDict()
+                                          .Build()));
+
+        total_time += edge.weight;
+      } else {
+        items.emplace_back(json::Node(json::Builder{}
+                                          .StartDict()
+                                          .Key("bus"s).Value(edge.name)
+                                          .Key("span_count"s).Value(static_cast<int>(edge.quality))
+                                          .Key("time"s).Value(edge.weight)
+                                          .Key("type"s).Value("Bus"s)
+                                          .EndDict()
+                                          .Build()));
+
+        total_time += edge.weight;
+      }
+    }
+
+    builder
+        .StartDict()
+        .Key("request_id"s)
+        .Value(id)
+        .Key("total_time"s)
+        .Value(total_time)
+        .Key("items"s)
+        .Value(items)
+        .EndDict();
+  }
+}
+
+

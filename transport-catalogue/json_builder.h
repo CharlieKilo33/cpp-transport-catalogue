@@ -10,20 +10,20 @@ class ItemContext;
 
 class BaseBuildContext {
  public:
-  explicit BaseBuildContext(Builder& builder) : builder_(builder) {}
+  explicit BaseBuildContext(Builder &builder) : builder_(builder) {}
  protected:
-  Builder& builder_;
+  Builder &builder_;
 };
 
 class ItemContext : public BaseBuildContext {
  public:
-  explicit ItemContext(Builder& builder) : BaseBuildContext(builder) {}
-  ItemContext& Key(std::string key);
-  ItemContext& Value(Node::Value value);
-  ItemContext& StartDict();
-  ItemContext& StartArray();
-  Builder& EndDict();
-  Builder& EndArray();
+  explicit ItemContext(Builder &builder) : BaseBuildContext(builder) {}
+  ItemContext &Key(std::string key);
+  ItemContext &Value(Node::Value value);
+  ItemContext &StartDict();
+  ItemContext &StartArray();
+  Builder &EndDict();
+  Builder &EndArray();
 };
 
 class Builder : public ItemContext {
@@ -44,7 +44,7 @@ class Builder : public ItemContext {
   bool key_ = false;
   std::string current_key;
   Node root_;
-  std::vector<Node*> nodes_stack_;
+  std::vector<Node *> nodes_stack_;
 };
 
 }

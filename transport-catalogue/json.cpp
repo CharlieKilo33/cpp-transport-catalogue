@@ -7,10 +7,10 @@ namespace json {
 namespace {
 using namespace std::literals;
 
-Node LoadNode(std::istream& input);
-Node LoadString(std::istream& input);
+Node LoadNode(std::istream &input);
+Node LoadString(std::istream &input);
 
-std::string LoadLiteral(std::istream& input) {
+std::string LoadLiteral(std::istream &input) {
   std::string s;
   while (std::isalpha(input.peek())) {
     s.push_back(static_cast<char>(input.get()));
@@ -18,7 +18,7 @@ std::string LoadLiteral(std::istream& input) {
   return s;
 }
 
-Node LoadArray(std::istream& input) {
+Node LoadArray(std::istream &input) {
   std::vector<Node> result;
 
   for (char c; input >> c && c != ']';) {
@@ -33,7 +33,7 @@ Node LoadArray(std::istream& input) {
   return Node(std::move(result));
 }
 
-Node LoadDict(std::istream& input) {
+Node LoadDict(std::istream &input) {
   Dict dict;
 
   for (char c; input >> c && c != '}';) {
@@ -57,7 +57,7 @@ Node LoadDict(std::istream& input) {
   return Node(std::move(dict));
 }
 
-Node LoadString(std::istream& input) {
+Node LoadString(std::istream &input) {
   auto it = std::istreambuf_iterator<char>(input);
   auto end = std::istreambuf_iterator<char>();
   std::string s;
@@ -76,23 +76,17 @@ Node LoadString(std::istream& input) {
       }
       const char escaped_char = *(it);
       switch (escaped_char) {
-        case 'n':
-          s.push_back('\n');
+        case 'n':s.push_back('\n');
           break;
-        case 't':
-          s.push_back('\t');
+        case 't':s.push_back('\t');
           break;
-        case 'r':
-          s.push_back('\r');
+        case 'r':s.push_back('\r');
           break;
-        case '"':
-          s.push_back('"');
+        case '"':s.push_back('"');
           break;
-        case '\\':
-          s.push_back('\\');
+        case '\\':s.push_back('\\');
           break;
-        default:
-          throw ParsingError("Unrecognized escape sequence \\"s + escaped_char);
+        default:throw ParsingError("Unrecognized escape sequence \\"s + escaped_char);
       }
     } else if (ch == '\n' || ch == '\r') {
       throw ParsingError("Unexpected end of line"s);
@@ -105,7 +99,7 @@ Node LoadString(std::istream& input) {
   return Node(std::move(s));
 }
 
-Node LoadBool(std::istream& input) {
+Node LoadBool(std::istream &input) {
   const auto s = LoadLiteral(input);
   if (s == "true"sv) {
     return Node{true};
@@ -116,7 +110,7 @@ Node LoadBool(std::istream& input) {
   }
 }
 
-Node LoadNull(std::istream& input) {
+Node LoadNull(std::istream &input) {
   if (auto literal = LoadLiteral(input); literal == "null"sv) {
     return Node{nullptr};
   } else {
@@ -124,7 +118,7 @@ Node LoadNull(std::istream& input) {
   }
 }
 
-Node LoadNumber(std::istream& input) {
+Node LoadNumber(std::istream &input) {
   std::string parsed_num;
 
   // Считывает в parsed_num очередной символ из input
@@ -190,18 +184,15 @@ Node LoadNumber(std::istream& input) {
   }
 }
 
-Node LoadNode(std::istream& input) {
+Node LoadNode(std::istream &input) {
   char c;
   if (!(input >> c)) {
     throw ParsingError("Unexpected EOF"s);
   }
   switch (c) {
-    case '[':
-      return LoadArray(input);
-    case '{':
-      return LoadDict(input);
-    case '"':
-      return LoadString(input);
+    case '[':return LoadArray(input);
+    case '{':return LoadDict(input);
+    case '"':return LoadString(input);
     case 't':
       // Атрибут [[fallthrough]] (провалиться) ничего не делает, и является
       // подсказкой компилятору и человеку, что здесь программист явно задумывал
@@ -210,20 +201,17 @@ Node LoadNode(std::istream& input) {
       // В данном случае, встретив t или f, переходим к попытке парсинга
       // литералов true либо false
       [[fallthrough]];
-    case 'f':
-      input.putback(c);
+    case 'f':input.putback(c);
       return LoadBool(input);
-    case 'n':
-      input.putback(c);
+    case 'n':input.putback(c);
       return LoadNull(input);
-    default:
-      input.putback(c);
+    default:input.putback(c);
       return LoadNumber(input);
   }
 }
 
 struct PrintContext {
-  std::ostream& out;
+  std::ostream &out;
   int indent_step = 4;
   int indent = 0;
 
@@ -238,47 +226,42 @@ struct PrintContext {
   }
 };
 
-void PrintNode(const Node& value, const PrintContext& ctx);
+void PrintNode(const Node &value, const PrintContext &ctx);
 
-template <typename Value>
-void PrintValue(const Value& value, const PrintContext& ctx) {
+template<typename Value>
+void PrintValue(const Value &value, const PrintContext &ctx) {
   ctx.out << value;
 }
 
-void PrintString(const std::string& value, std::ostream& out) {
+void PrintString(const std::string &value, std::ostream &out) {
   out.put('"');
   for (const char c : value) {
     switch (c) {
-      case '\r':
-        out << "\\r"sv;
+      case '\r':out << "\\r"sv;
         break;
-      case '\n':
-        out << "\\n"sv;
+      case '\n':out << "\\n"sv;
         break;
-      case '\t':
-        out << "\\t"sv;
+      case '\t':out << "\\t"sv;
         break;
       case '"':
         // Символы " и \ выводятся как \" или \\, соответственно
         [[fallthrough]];
-      case '\\':
-        out.put('\\');
+      case '\\':out.put('\\');
         [[fallthrough]];
-      default:
-        out.put(c);
+      default:out.put(c);
         break;
     }
   }
   out.put('"');
 }
 
-template <>
-void PrintValue<std::string>(const std::string& value, const PrintContext& ctx) {
+template<>
+void PrintValue<std::string>(const std::string &value, const PrintContext &ctx) {
   PrintString(value, ctx.out);
 }
 
-template <>
-void PrintValue<std::nullptr_t>(const std::nullptr_t&, const PrintContext& ctx) {
+template<>
+void PrintValue<std::nullptr_t>(const std::nullptr_t &, const PrintContext &ctx) {
   ctx.out << "null"sv;
 }
 
@@ -286,18 +269,18 @@ void PrintValue<std::nullptr_t>(const std::nullptr_t&, const PrintContext& ctx) 
 // по константной ссылке, как и в основном шаблоне.
 // В качестве альтернативы можно использовать перегрузку:
 // void PrintValue(bool value, const PrintContext& ctx);
-template <>
-void PrintValue<bool>(const bool& value, const PrintContext& ctx) {
+template<>
+void PrintValue<bool>(const bool &value, const PrintContext &ctx) {
   ctx.out << (value ? "true"sv : "false"sv);
 }
 
-template <>
-void PrintValue<Array>(const Array& nodes, const PrintContext& ctx) {
-  std::ostream& out = ctx.out;
+template<>
+void PrintValue<Array>(const Array &nodes, const PrintContext &ctx) {
+  std::ostream &out = ctx.out;
   out << "[\n"sv;
   bool first = true;
   auto inner_ctx = ctx.Indented();
-  for (const Node& node : nodes) {
+  for (const Node &node : nodes) {
     if (first) {
       first = false;
     } else {
@@ -311,13 +294,13 @@ void PrintValue<Array>(const Array& nodes, const PrintContext& ctx) {
   out.put(']');
 }
 
-template <>
-void PrintValue<Dict>(const Dict& nodes, const PrintContext& ctx) {
-  std::ostream& out = ctx.out;
+template<>
+void PrintValue<Dict>(const Dict &nodes, const PrintContext &ctx) {
+  std::ostream &out = ctx.out;
   out << "{\n"sv;
   bool first = true;
   auto inner_ctx = ctx.Indented();
-  for (const auto& [key, node] : nodes) {
+  for (const auto &[key, node] : nodes) {
     if (first) {
       first = false;
     } else {
@@ -333,9 +316,9 @@ void PrintValue<Dict>(const Dict& nodes, const PrintContext& ctx) {
   out.put('}');
 }
 
-void PrintNode(const Node& node, const PrintContext& ctx) {
+void PrintNode(const Node &node, const PrintContext &ctx) {
   std::visit(
-      [&ctx](const auto& value) {
+      [&ctx](const auto &value) {
         PrintValue(value, ctx);
       },
       node.GetValue());
@@ -343,11 +326,11 @@ void PrintNode(const Node& node, const PrintContext& ctx) {
 
 }  // namespace
 
-Document Load(std::istream& input) {
+Document Load(std::istream &input) {
   return Document{LoadNode(input)};
 }
 
-void Print(const Document& doc, std::ostream& output) {
+void Print(const Document &doc, std::ostream &output) {
   PrintNode(doc.GetRoot(), PrintContext{output});
 }
 

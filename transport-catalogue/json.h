@@ -69,7 +69,7 @@ class Node final
   bool IsArray() const {
     return std::holds_alternative<Array>(*this);
   }
-  const Array& AsArray() const {
+  const Array &AsArray() const {
     using namespace std::literals;
     if (!IsArray()) {
       throw std::logic_error("Not an array"s);
@@ -78,7 +78,7 @@ class Node final
     return std::get<Array>(*this);
   }
 
-  Array& AsArray() {
+  Array &AsArray() {
     using namespace std::literals;
     if (!IsArray()) {
       throw std::logic_error("Not an array"s);
@@ -90,7 +90,7 @@ class Node final
   bool IsString() const {
     return std::holds_alternative<std::string>(*this);
   }
-  const std::string& AsString() const {
+  const std::string &AsString() const {
     using namespace std::literals;
     if (!IsString()) {
       throw std::logic_error("Not a string"s);
@@ -102,7 +102,7 @@ class Node final
   bool IsDict() const {
     return std::holds_alternative<Dict>(*this);
   }
-  const Dict& AsDict() const {
+  const Dict &AsDict() const {
     using namespace std::literals;
     if (!IsDict()) {
       throw std::logic_error("Not a dict"s);
@@ -111,7 +111,7 @@ class Node final
     return std::get<Dict>(*this);
   }
 
-  Dict& AsDict() {
+  Dict &AsDict() {
     using namespace std::literals;
     if (!IsDict()) {
       throw std::logic_error("Not a dict"s);
@@ -120,16 +120,16 @@ class Node final
     return std::get<Dict>(*this);
   }
 
-  bool operator==(const Node& rhs) const {
+  bool operator==(const Node &rhs) const {
     return GetValue() == rhs.GetValue();
   }
 
-  Value& GetValue() const {
-    return (Value&)*this;
+  Value &GetValue() const {
+    return (Value &) *this;
   }
 };
 
-inline bool operator!=(const Node& lhs, const Node& rhs) {
+inline bool operator!=(const Node &lhs, const Node &rhs) {
   return !(lhs == rhs);
 }
 
@@ -139,7 +139,7 @@ class Document {
       : root_(std::move(root)) {
   }
 
-  const Node& GetRoot() const {
+  const Node &GetRoot() const {
     return root_;
   }
 
@@ -147,16 +147,16 @@ class Document {
   Node root_;
 };
 
-inline bool operator==(const Document& lhs, const Document& rhs) {
+inline bool operator==(const Document &lhs, const Document &rhs) {
   return lhs.GetRoot() == rhs.GetRoot();
 }
 
-inline bool operator!=(const Document& lhs, const Document& rhs) {
+inline bool operator!=(const Document &lhs, const Document &rhs) {
   return !(lhs == rhs);
 }
 
-Document Load(std::istream& input);
+Document Load(std::istream &input);
 
-void Print(const Document& doc, std::ostream& output);
+void Print(const Document &doc, std::ostream &output);
 
 }  // namespace json

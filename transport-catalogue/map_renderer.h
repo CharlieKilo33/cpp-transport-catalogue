@@ -24,7 +24,7 @@ struct RenderSettings {
 
 struct RenderContext {
   RenderSettings render_settings;
-  std::vector<detail::Bus*> buses_route;
+  std::vector<detail::Bus *> buses_route;
 };
 
 inline const double EPSILON = 1e-6;
@@ -32,7 +32,7 @@ bool IsZero(double value);
 
 class SphereProjector {
  public:
-  template <typename PointInputIt>
+  template<typename PointInputIt>
   SphereProjector(PointInputIt points_begin, PointInputIt points_end,
                   double max_width, double max_height, double padding)
       : padding_(padding)  //
@@ -93,15 +93,15 @@ class MapRenderer {
 
  private:
   std::vector<svg::Polyline> GetRouteLines(
-      const std::vector<detail::Bus*>& buses, const SphereProjector& sp) const;
+      const std::vector<detail::Bus *> &buses, const SphereProjector &sp) const;
 
-  std::vector<svg::Text> GetBusLabel(const std::vector<detail::Bus*>& buses,
-                                     const SphereProjector& sp) const;
+  std::vector<svg::Text> GetBusLabel(const std::vector<detail::Bus *> &buses,
+                                     const SphereProjector &sp) const;
 
-  std::vector<svg::Circle> GetStopsSymbols(const std::vector<detail::Stop*>& stops,
-                                           const SphereProjector& sp) const;
+  std::vector<svg::Circle> GetStopsSymbols(const std::vector<detail::Stop *> &stops,
+                                           const SphereProjector &sp) const;
 
-  std::vector<svg::Text> GetStopsLabels(const std::vector<detail::Stop*>& stops,
-                                        const SphereProjector& sp) const;
+  std::vector<svg::Text> GetStopsLabels(const std::vector<detail::Stop *> &stops,
+                                        const SphereProjector &sp) const;
   RenderContext render_context_;
 };

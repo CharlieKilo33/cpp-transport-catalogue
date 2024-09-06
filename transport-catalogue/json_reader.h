@@ -17,27 +17,31 @@ struct StatRequest {
   int id = 0;
   std::string type;
   std::string name;
+  std::string name_stop_from;
+  std::string name_stop_to;
 };
 
 class JsonReader {
  public:
-  JsonReader(transport::TransportCatalogue& transport_catalogue,
-             RequestHandler& request_handler, json::Document& doc);
+  JsonReader(transport::TransportCatalogue &transport_catalogue,
+             RequestHandler &request_handler, json::Document &doc);
 
-  void ParseStatRequests(std::ostream& out);
+  void ParseStatRequests(std::ostream &out);
 
  private:
   void LoadBaseRequests();
   void LoadRenderSettings();
+  void LoadRoutingSettings();
   void LoadStatRequests();
-  static std::vector<std::string> ParseStopNames(const json::Node& array);
-  static void GetMapBuses(const detail::Bus* bus, int id,
-                          json::Builder& builder);
-  void GetMapStops(detail::Stop* stop, int id,
-                                                json::Builder& builder);
-  void GetMapMap(int id, json::Builder& builder);
+
+  static std::vector<std::string> ParseStopNames(const json::Node &array);
+  static void GetMapBuses(const detail::Bus *bus, int id, json::Builder &builder);
+  void GetMapStops(detail::Stop *stop, int id, json::Builder &builder);
+  void GetMapMap(int id, json::Builder &builder);
+  void GetRouteItems(const std::string &stop_from, int id, const std::string &stop_to, json::Builder &builder);
+
   std::vector<StatRequest> stat_requests_;
-  transport::TransportCatalogue& transport_catalogue_;
-  RequestHandler& request_handler_;
-  json::Document& doc_;
+  transport::TransportCatalogue &transport_catalogue_;
+  RequestHandler &request_handler_;
+  json::Document &doc_;
 };

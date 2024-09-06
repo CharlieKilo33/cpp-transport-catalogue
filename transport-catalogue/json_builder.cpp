@@ -4,7 +4,7 @@ using namespace std;
 
 namespace json {
 
-ItemContext& ItemContext::Key(std::string key) {
+ItemContext &ItemContext::Key(std::string key) {
   builder_.CheckFinished();
   if (!builder_.Empty() && builder_.LastDict() && !builder_.key_) {
     builder_.current_key = std::move(key);
@@ -15,17 +15,17 @@ ItemContext& ItemContext::Key(std::string key) {
   return *this;
 }
 
-ItemContext& ItemContext::Value(Node::Value value) {
+ItemContext &ItemContext::Value(Node::Value value) {
   builder_.CheckFinished();
   if (builder_.Empty()) {
     builder_.root_.GetValue() = std::move(value);
     builder_.Finished();
   } else if (builder_.LastDict() && builder_.key_) {
-    auto& dict = std::get<Dict>(builder_.nodes_stack_.back()->GetValue());
+    auto &dict = std::get<Dict>(builder_.nodes_stack_.back()->GetValue());
     dict[builder_.current_key].GetValue() = std::move(value);
     builder_.key_ = false;
   } else if (builder_.LastArray()) {
-    auto& array = std::get<Array>(builder_.nodes_stack_.back()->GetValue());
+    auto &array = std::get<Array>(builder_.nodes_stack_.back()->GetValue());
     Node node;
     node.GetValue() = std::move(value);
     array.emplace_back(node);
@@ -35,18 +35,18 @@ ItemContext& ItemContext::Value(Node::Value value) {
   return *this;
 }
 
-ItemContext& ItemContext::StartDict() {
+ItemContext &ItemContext::StartDict() {
   builder_.CheckFinished();
   if (builder_.Empty()) {
     builder_.root_ = Dict();
     builder_.nodes_stack_.emplace_back(&builder_.root_);
   } else if (builder_.LastDict() && builder_.key_) {
-    auto& dict = std::get<Dict>(builder_.nodes_stack_.back()->GetValue());
+    auto &dict = std::get<Dict>(builder_.nodes_stack_.back()->GetValue());
     dict[builder_.current_key] = Node(Dict());
     builder_.nodes_stack_.push_back(&dict.at(builder_.current_key));
     builder_.key_ = false;
   } else if (builder_.LastArray()) {
-    auto& array = std::get<Array>(builder_.nodes_stack_.back()->GetValue());
+    auto &array = std::get<Array>(builder_.nodes_stack_.back()->GetValue());
     array.emplace_back(Node(Dict()));
     builder_.nodes_stack_.push_back(&array.back());
   } else {
@@ -55,18 +55,18 @@ ItemContext& ItemContext::StartDict() {
   return *this;
 }
 
-ItemContext& ItemContext::StartArray() {
+ItemContext &ItemContext::StartArray() {
   builder_.CheckFinished();
   if (builder_.Empty()) {
     builder_.root_ = Array();
     builder_.nodes_stack_.emplace_back(&builder_.root_);
   } else if (builder_.LastDict() && builder_.key_) {
-    auto& dict = std::get<Dict>(builder_.nodes_stack_.back()->GetValue());
+    auto &dict = std::get<Dict>(builder_.nodes_stack_.back()->GetValue());
     dict[builder_.current_key] = Node(Array());
     builder_.nodes_stack_.push_back(&dict.at(builder_.current_key));
     builder_.key_ = false;
   } else if (builder_.LastArray()) {
-    auto& array = std::get<Array>(builder_.nodes_stack_.back()->GetValue());
+    auto &array = std::get<Array>(builder_.nodes_stack_.back()->GetValue());
     array.emplace_back(Node(Array()));
     builder_.nodes_stack_.push_back(&array.back());
   } else {
@@ -75,7 +75,7 @@ ItemContext& ItemContext::StartArray() {
   return *this;
 }
 
-Builder& ItemContext::EndDict() {
+Builder &ItemContext::EndDict() {
   builder_.CheckFinished();
   if (!builder_.LastDict() || builder_.key_) {
     throw std::logic_error("Invalid EndDict usage"s);
@@ -86,7 +86,7 @@ Builder& ItemContext::EndDict() {
   return builder_;
 }
 
-Builder& ItemContext::EndArray() {
+Builder &ItemContext::EndArray() {
   builder_.CheckFinished();
   if (!builder_.LastArray()) {
     throw std::logic_error("Invalid EndArray usage"s);

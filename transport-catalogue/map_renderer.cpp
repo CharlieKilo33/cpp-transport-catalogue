@@ -9,21 +9,21 @@ void MapRenderer::AddContext(RenderContext render_context) {
   render_context_ = std::move(render_context);
   std::sort(render_context_.buses_route.begin(),
             render_context_.buses_route.end(),
-            [](detail::Bus* lhs, detail::Bus* rhs) {
+            [](detail::Bus *lhs, detail::Bus *rhs) {
               return lhs->number < rhs->number;
             });
 }
 
 std::vector<svg::Polyline> MapRenderer::GetRouteLines(
-    const std::vector<detail::Bus*>& buses, const SphereProjector& sp) const {
+    const std::vector<detail::Bus *> &buses, const SphereProjector &sp) const {
   std::vector<svg::Polyline> result;
   size_t color_num = 0;
-  for (const auto& bus : buses) {
+  for (const auto &bus : buses) {
     if (bus->stops.empty()) continue;
-    std::vector<const detail::Stop*> route_stops{bus->stops.begin(),
-                                                 bus->stops.end()};
+    std::vector<const detail::Stop *> route_stops{bus->stops.begin(),
+                                                  bus->stops.end()};
     svg::Polyline line;
-    for (const auto& stop : route_stops) {
+    for (const auto &stop : route_stops) {
       line.AddPoint(sp(stop->coordinates));
     }
     line.SetStrokeColor(
@@ -46,10 +46,10 @@ std::vector<svg::Polyline> MapRenderer::GetRouteLines(
 }
 
 std::vector<svg::Text> MapRenderer::GetBusLabel(
-    const std::vector<detail::Bus*>& buses, const SphereProjector& sp) const {
+    const std::vector<detail::Bus *> &buses, const SphereProjector &sp) const {
   std::vector<svg::Text> result;
   size_t color_num = 0;
-  for (const auto& bus : buses) {
+  for (const auto &bus : buses) {
     if (bus->stops.empty()) {
       continue;
     }
@@ -87,7 +87,6 @@ std::vector<svg::Text> MapRenderer::GetBusLabel(
     result.push_back(underlayer);
     result.push_back(text);
 
-
     if (!bus->is_roundtrip &&
         bus->stops[0] != bus->stops[bus->stops.size() / 2]) {
       svg::Text text2{text};
@@ -104,9 +103,9 @@ std::vector<svg::Text> MapRenderer::GetBusLabel(
 }
 
 std::vector<svg::Circle> MapRenderer::GetStopsSymbols(
-    const std::vector<detail::Stop*>& stops, const SphereProjector& sp) const {
+    const std::vector<detail::Stop *> &stops, const SphereProjector &sp) const {
   std::vector<svg::Circle> result;
-  for (const auto& stop : stops) {
+  for (const auto &stop : stops) {
     svg::Circle symbol;
     symbol.SetCenter(sp(stop->coordinates));
     symbol.SetRadius(render_context_.render_settings.stop_radius);
@@ -119,11 +118,11 @@ std::vector<svg::Circle> MapRenderer::GetStopsSymbols(
 }
 
 std::vector<svg::Text> MapRenderer::GetStopsLabels(
-    const std::vector<detail::Stop*>& stops, const SphereProjector& sp) const {
+    const std::vector<detail::Stop *> &stops, const SphereProjector &sp) const {
   std::vector<svg::Text> result;
   svg::Text text;
   svg::Text underlayer;
-  for (const auto& stop : stops) {
+  for (const auto &stop : stops) {
     text.SetPosition(sp(stop->coordinates));
     text.SetOffset({render_context_.render_settings.stop_label_offset.first,
                     render_context_.render_settings.stop_label_offset.second});
@@ -154,25 +153,25 @@ std::vector<svg::Text> MapRenderer::GetStopsLabels(
 }
 
 svg::Document MapRenderer::GetSVG() const {
-  std::vector<detail::Bus*> buses = render_context_.buses_route;
-  std::vector<detail::Stop*> stops;
+  std::vector<detail::Bus *> buses = render_context_.buses_route;
+  std::vector<detail::Stop *> stops;
   svg::Document result;
   std::vector<geo::Coordinates> route_stops_coord;
 
-  for (const auto& bus : buses) {
+  for (const auto &bus : buses) {
     if (bus->stops.empty()) continue;
     for (auto i = 0; i < int(bus->stops.size()); ++i) {
       route_stops_coord.push_back(bus->stops[i]->coordinates);
-      if(std::count(stops.begin(), stops.end(), bus->stops[i])){
+      if (std::count(stops.begin(), stops.end(), bus->stops[i])) {
         continue;
       }
-      if(bus->is_roundtrip){
-        if(i == int(bus->stops.size()) - 1){
+      if (bus->is_roundtrip) {
+        if (i == int(bus->stops.size()) - 1) {
           break;
         }
         stops.push_back(bus->stops[i]);
       } else {
-        if(i == int(bus->stops.size()) / 2){
+        if (i == int(bus->stops.size()) / 2) {
           stops.push_back(bus->stops[i]);
           break;
         } else {
@@ -185,14 +184,14 @@ svg::Document MapRenderer::GetSVG() const {
                      render_context_.render_settings.width,
                      render_context_.render_settings.height,
                      render_context_.render_settings.padding);
-  std::sort(stops.begin(), stops.end(), [](detail::Stop* lhs, detail::Stop* rhs){
+  std::sort(stops.begin(), stops.end(), [](detail::Stop *lhs, detail::Stop *rhs) {
     return lhs->name < rhs->name;
   });
 
-  for (const auto& line : GetRouteLines(buses, sp)) result.Add(line);
-  for (const auto& text : GetBusLabel(buses, sp)) result.Add(text);
-  for (const auto& circle : GetStopsSymbols(stops, sp)) result.Add(circle);
-  for (const auto& text : GetStopsLabels(stops, sp)) result.Add(text);
+  for (const auto &line : GetRouteLines(buses, sp)) result.Add(line);
+  for (const auto &text : GetBusLabel(buses, sp)) result.Add(text);
+  for (const auto &circle : GetStopsSymbols(stops, sp)) result.Add(circle);
+  for (const auto &text : GetStopsLabels(stops, sp)) result.Add(text);
 
   return result;
 }

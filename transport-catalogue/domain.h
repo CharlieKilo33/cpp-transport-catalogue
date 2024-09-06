@@ -30,7 +30,7 @@ struct Stop {
 struct Bus {
   Bus() = default;
   std::string number;
-  std::vector<Stop*> stops;
+  std::vector<Stop *> stops;
   double curvature = 0;
   double length_between_bus_stops = 0;
   size_t unique_stops = 0;

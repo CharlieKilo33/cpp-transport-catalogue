@@ -5,25 +5,24 @@
 
 using namespace transport;
 
-void TransportCatalogue::AddStop(const Stop& stop) {
+void TransportCatalogue::AddStop(const Stop &stop) {
   stops_.push_back(stop);
-  Stop* added_stop = &stops_.back();
+  Stop *added_stop = &stops_.back();
   stopname_to_stop_[added_stop->name] = added_stop;
 }
 
-void TransportCatalogue::AddBus(const Bus& bus) {
+void TransportCatalogue::AddBus(const Bus &bus) {
   buses_.push_back(bus);
-  Bus* added_bus = &buses_.back();
+  Bus *added_bus = &buses_.back();
   double length_between_bus_stops = 0;
   double length = 0;
   std::unordered_set<std::string_view> unique_stops;
 
   for (size_t i = 0; i < added_bus->stops.size() - 1; ++i) {
-    auto& stop_i = added_bus->stops[i];
-    auto& stop_i_plus_1 = added_bus->stops[i + 1];
+    auto &stop_i = added_bus->stops[i];
+    auto &stop_i_plus_1 = added_bus->stops[i + 1];
     unique_stops.insert(stop_i->name);
     unique_stops.insert(stop_i_plus_1->name);
-
     auto distance_pair = GetDistanceBetweenStops(stop_i, stop_i_plus_1);
     length_between_bus_stops += distance_pair.first;
     length += distance_pair.second;
@@ -38,15 +37,15 @@ void TransportCatalogue::AddBus(const Bus& bus) {
   added_bus->unique_stops = GetUniqueStations(added_bus->number);
 }
 
-Stop* TransportCatalogue::FindStop(std::string_view name) const {
+Stop *TransportCatalogue::FindStop(std::string_view name) const {
   return stopname_to_stop_.count(name) ? stopname_to_stop_.at(name) : nullptr;
 }
 
-const Bus* TransportCatalogue::GetBusInfo(std::string_view number) const {
+const Bus *TransportCatalogue::GetBusInfo(std::string_view number) const {
   if (!busname_to_bus_.count(number)) {
     return nullptr;
   }
-  Bus* bus = busname_to_bus_.at(number);
+  Bus *bus = busname_to_bus_.at(number);
   return bus;
 }
 
@@ -77,36 +76,39 @@ std::set<std::string_view> TransportCatalogue::GetBusesThroughStop(
   }
 }
 
-void TransportCatalogue::AddDistanceBetweenStops(std::string_view from_stop,
-                                                 std::string_view to_stop,
+void TransportCatalogue::AddDistanceBetweenStops(Stop *from_stop, Stop *to_stop,
                                                  double distance) {
-  if (!(stopname_to_stop_.count(from_stop) &&
-        stopname_to_stop_.count(to_stop))) {
-    return;
-  }
-  Stop* stop1 = stopname_to_stop_.at(from_stop);
-  Stop* stop2 = stopname_to_stop_.at(to_stop);
-  distances_between_bus_stops_[{stop1, stop2}] = distance;
-}
-
-std::pair<double, double> TransportCatalogue::GetDistanceBetweenStops(
-    detail::Stop* from_stop, detail::Stop* to_stop) {
+  distances_between_bus_stops_[{from_stop, to_stop}] = distance;
   auto old_distance =
       ComputeDistance(from_stop->coordinates, to_stop->coordinates);
   distance_[{from_stop, to_stop}] = old_distance;
-  auto distance = distances_between_bus_stops_.find({from_stop, to_stop});
-  if (distance == distances_between_bus_stops_.end()) {
-    return {distances_between_bus_stops_.at({to_stop, from_stop}),
-            old_distance};
-  }
-  return {distance->second, old_distance};
+  distance_[{to_stop, from_stop}] = old_distance;
 }
 
-std::vector<Bus*> TransportCatalogue::GetAllBuses() {
-  std::vector<Bus*> buses;
+std::pair<double, double> TransportCatalogue::GetDistanceBetweenStops(
+    detail::Stop *from_stop, detail::Stop *to_stop) const {
+  auto distance = distances_between_bus_stops_.find({from_stop, to_stop});
+  if (distance == distances_between_bus_stops_.end()) {
+    return {distances_between_bus_stops_.at({to_stop, from_stop}), distance_.at({from_stop, to_stop})};
+  }
+  return {distance->second, distance_.at({from_stop, to_stop})};
+}
+
+std::vector<Bus *> TransportCatalogue::GetAllBuses() const{
+  std::vector<Bus *> buses;
   buses.reserve(busname_to_bus_.size());
-  for (const auto& [busname_to_stop, bus] : busname_to_bus_) {
+  for (const auto &[busname_to_stop, bus] : busname_to_bus_) {
     buses.push_back(bus);
   }
   return buses;
+}
+
+
+std::vector<Stop*> TransportCatalogue::GetSortedStops() const {
+  std::vector<Stop*> stops;
+  stops.reserve(stopname_to_stop_.size());
+  for (const auto &[stopname_to_stop, stop] : stopname_to_stop_) {
+    stops.push_back(stop);
+  }
+  return stops;
 }
